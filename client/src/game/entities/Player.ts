@@ -2,6 +2,7 @@ import * as Phaser from "phaser";
 import { SkillManager } from "../skills/SkillManager";
 import { SkillKey, SkillEffect } from "../skills/types";
 import { eventBus } from "../EventBus";
+import { UpgradeBonus, EMPTY_BONUS } from "../upgrades/types";
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   speed = 200;
@@ -25,6 +26,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private facingRight = true;
 
   characterId: string;
+  private upgradeBonuses: UpgradeBonus = { ...EMPTY_BONUS, critMultiplier: EMPTY_BONUS.critMultiplier };
+  private baseHp = 100;
+  private baseSpeed = 200;
+  private baseFireRate = 400;
+  private baseDamage = 10;
+  private baseMana = 100;
+  private baseManaRegen = 5;
 
   constructor(scene: Phaser.Scene, x: number, y: number, character = "snowball") {
     const texKey = `char_${character}`;
@@ -47,53 +55,72 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private applyCharacterStats(character: string): void {
     switch (character) {
       case "boxer":
-        this.hp = 150;
-        this.maxHp = 150;
-        this.speed = 160;
-        this.fireRate = 500;
-        this.projectileDamage = 12;
+        this.baseHp = 150;
+        this.baseSpeed = 160;
+        this.baseFireRate = 500;
+        this.baseDamage = 12;
         break;
       case "benjamin":
-        this.hp = 80;
-        this.maxHp = 80;
-        this.speed = 230;
-        this.fireRate = 380;
-        this.projectileDamage = 8;
+        this.baseHp = 80;
+        this.baseSpeed = 230;
+        this.baseFireRate = 380;
+        this.baseDamage = 8;
         break;
       case "napoleon":
-        this.hp = 100;
-        this.maxHp = 100;
-        this.speed = 180;
-        this.fireRate = 400;
-        this.projectileDamage = 11;
-        this.mana = 130;
-        this.maxMana = 130;
-        this.manaRegen = 7;
+        this.baseHp = 100;
+        this.baseSpeed = 180;
+        this.baseFireRate = 400;
+        this.baseDamage = 11;
+        this.baseMana = 130;
+        this.baseManaRegen = 7;
         break;
       case "mollie":
-        this.hp = 70;
-        this.maxHp = 70;
-        this.speed = 260;
-        this.fireRate = 350;
-        this.projectileDamage = 9;
+        this.baseHp = 70;
+        this.baseSpeed = 260;
+        this.baseFireRate = 350;
+        this.baseDamage = 9;
         break;
       case "sheep":
-        this.hp = 90;
-        this.maxHp = 90;
-        this.speed = 170;
-        this.fireRate = 450;
-        this.projectileDamage = 10;
+        this.baseHp = 90;
+        this.baseSpeed = 170;
+        this.baseFireRate = 450;
+        this.baseDamage = 10;
         break;
       case "snowball":
       default:
-        this.hp = 100;
-        this.maxHp = 100;
-        this.speed = 190;
-        this.fireRate = 380;
-        this.projectileDamage = 10;
+        this.baseHp = 100;
+        this.baseSpeed = 190;
+        this.baseFireRate = 380;
+        this.baseDamage = 10;
         break;
     }
-    this.mana = this.maxMana;
+    this.hp = this.baseHp;
+    this.maxHp = this.baseHp;
+    this.speed = this.baseSpeed;
+    this.fireRate = this.baseFireRate;
+    this.projectileDamage = this.baseDamage;
+    this.mana = this.baseMana;
+    this.maxMana = this.baseMana;
+    this.manaRegen = this.baseManaRegen;
+  }
+
+  applyUpgradeBonuses(bonuses: UpgradeBonus): void {
+    this.upgradeBonuses = bonuses;
+
+    const prevMaxHp = this.maxHp;
+    this.maxHp = Math.floor(this.baseHp * bonuses.maxHp);
+    this.speed = Math.floor(this.baseSpeed * bonuses.moveSpeed);
+    this.fireRate = Math.max(100, Math.floor(this.baseFireRate / bonuses.attackSpeed));
+    this.projectileDamage = Math.floor(this.baseDamage * bonuses.attackDamage);
+    this.maxMana = Math.floor(this.baseMana * bonuses.manaRegen);
+    this.manaRegen = this.baseManaRegen * bonuses.manaRegen;
+
+    if (this.maxHp > prevMaxHp) {
+      this.hp += this.maxHp - prevMaxHp;
+    }
+    this.hp = Math.min(this.hp, this.maxHp);
+
+    eventBus.emit("stats-update", { hp: this.hp, maxHp: this.maxHp, mana: this.mana, maxMana: this.maxMana });
   }
 
   kill(): void {
@@ -278,18 +305,55 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (!nearest) return;
 
     const enemy = nearest as Phaser.Physics.Arcade.Sprite;
-    const angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
+    const baseAngle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
 
+    const projSpeed = this.projectileSpeed * (this.upgradeBonuses.projectileSpeed ?? 1);
+    const pierceCount = this.upgradeBonuses.projectilePierce ?? 0;
+    const isCrit = Math.random() < (this.upgradeBonuses.critChance ?? 0);
+    const dmg = this.projectileDamage * (isCrit ? (this.upgradeBonuses.critMultiplier ?? 1.5) : 1);
+
+    // 메인 발사체
+    this.fireSingle(projectiles, baseAngle, projSpeed, dmg, pierceCount);
+
+    // 전방 추가 사격
+    for (let i = 0; i < (this.upgradeBonuses.extraShotsFront ?? 0); i++) {
+      const spread = 0.1 + i * 0.08;
+      if (i % 2 === 0) {
+        this.fireSingle(projectiles, baseAngle + spread * ((i >> 1) + 1), projSpeed, dmg, pierceCount);
+      } else {
+        this.fireSingle(projectiles, baseAngle - spread * ((i >> 1) + 1), projSpeed, dmg, pierceCount);
+      }
+    }
+
+    // 후방 사격
+    for (let i = 0; i < (this.upgradeBonuses.extraShotsBack ?? 0); i++) {
+      const backAngle = baseAngle + Math.PI;
+      const spread = 0.15 * i;
+      this.fireSingle(projectiles, backAngle + (i % 2 === 0 ? spread : -spread), projSpeed, dmg, pierceCount);
+    }
+
+    // 대각선 사격
+    for (let i = 0; i < (this.upgradeBonuses.extraShotsDiagonal ?? 0); i++) {
+      const offset = (Math.PI / 4) * (i % 2 === 0 ? 1 : -1) * (Math.floor(i / 2) + 1);
+      this.fireSingle(projectiles, baseAngle + offset, projSpeed, dmg, pierceCount);
+    }
+  }
+
+  private fireSingle(
+    projectiles: Phaser.GameObjects.Group,
+    angle: number,
+    speed: number,
+    damage: number,
+    pierce: number,
+  ): void {
     const proj = this.scene.physics.add.sprite(this.x, this.y, "projectile");
     proj.setDepth(10);
-    proj.setData("damage", this.projectileDamage);
+    proj.setData("damage", damage);
+    proj.setData("pierce", pierce);
 
     const body = proj.body as Phaser.Physics.Arcade.Body;
     body.setCircle(4);
-    body.setVelocity(
-      Math.cos(angle) * this.projectileSpeed,
-      Math.sin(angle) * this.projectileSpeed,
-    );
+    body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
 
     projectiles.add(proj);
 

@@ -4,6 +4,8 @@ import { Player } from "../entities/Player";
 import { Enemy, EnemyType } from "../entities/Enemy";
 import { SkillKey, SkillEffect } from "../skills/types";
 import { earnIdeaFragments } from "../systems/AISynthesis";
+import { UpgradeManager } from "../upgrades/UpgradeManager";
+import { UpgradeDef, UpgradeBonus } from "../upgrades/types";
 
 interface GameSceneInit {
   chapterId: number;
@@ -34,6 +36,8 @@ export class GameScene extends Phaser.Scene {
   private charId = "snowball";
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private skillKeys!: Record<string, Phaser.Input.Keyboard.Key>;
+  private upgradeManager!: UpgradeManager;
+  private upgradePending = false;
 
   constructor() {
     super({ key: "GameScene" });
@@ -49,6 +53,8 @@ export class GameScene extends Phaser.Scene {
     this.charId = data.character ?? "snowball";
     this.chapterId = data.chapterId ?? 1;
     this.totalWaves = this.chapterId === 1 ? 10 : this.chapterId === 2 ? 15 : this.chapterId === 3 ? 20 : 25;
+    this.upgradeManager = new UpgradeManager();
+    this.upgradePending = false;
   }
 
   create(data: GameSceneInit): void {
@@ -69,6 +75,7 @@ export class GameScene extends Phaser.Scene {
     this.setupJoystick();
     this.setupCollisions();
     this.registerEnemyKillHandler();
+    this.registerUpgradeHandler();
     this.startFirstWave();
   }
 
@@ -143,9 +150,14 @@ export class GameScene extends Phaser.Scene {
       const e = enemy as unknown as Enemy;
       if (!p.active || !e.active) return;
       const dmg = (p.getData("damage") as number) ?? 10;
+      const pierce = (p.getData("pierce") as number) ?? 0;
       e.takeDamage(dmg);
       this.spawnHitEffect(p.x, p.y);
-      p.destroy();
+      if (pierce > 0) {
+        p.setData("pierce", pierce - 1);
+      } else {
+        p.destroy();
+      }
     });
 
     // 플레이어 사망 감지
@@ -333,10 +345,41 @@ export class GameScene extends Phaser.Scene {
     const fragments = 5 + this.currentWave * 2;
     earnIdeaFragments(fragments);
 
-    this.time.addEvent({
-      delay: 2000,
-      loop: false,
-      callback: () => this.startWave(),
+    // 2웨이브마다 업그레이드 선택
+    if (this.currentWave % 2 === 0) {
+      this.pauseForUpgrade();
+    } else {
+      this.time.addEvent({
+        delay: 2000,
+        loop: false,
+        callback: () => this.startWave(),
+      });
+    }
+  }
+
+  private pauseForUpgrade(): void {
+    this.upgradePending = true;
+    this.physics.pause();
+    const choices = this.upgradeManager.generateChoices(3);
+    eventBus.emit("upgrade-select", choices);
+  }
+
+  private registerUpgradeHandler(): void {
+    eventBus.on("upgrade-selected", (data: unknown) => {
+      const def = data as UpgradeDef;
+      this.upgradeManager.selectUpgrade(def);
+      this.upgradePending = false;
+
+      const bonuses = this.upgradeManager.getBonuses();
+      this.player.applyUpgradeBonuses(bonuses);
+
+      this.physics.resume();
+
+      this.time.addEvent({
+        delay: 500,
+        loop: false,
+        callback: () => this.startWave(),
+      });
     });
   }
 
