@@ -393,3 +393,91 @@ body {
   border-color: #c4a35a;
   color: #ffcc00;
 }
+
+.upgrade-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 35;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.upgrade-box {
+  text-align: center;
+  padding: 24px 16px;
+  border: 2px solid #c4a35a;
+  background: #1a0f00;
+  max-width: 420px;
+  width: 90%;
+}
+
+.upgrade-title {
+  font-size: 20px;
+  color: #c4a35a;
+  margin-bottom: 4px;
+}
+
+.upgrade-sub {
+  font-size: 12px;
+  color: #8b7355;
+  margin-bottom: 16px;
+}
+
+.upgrade-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upgrade-card {
+  position: relative;
+  padding: 12px 14px;
+  background: #2d1b00;
+  border: 2px solid #555;
+  color: #c4a35a;
+  font-family: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  width: 100%;
+}
+
+.upgrade-card:hover {
+  background: #3d2b10;
+}
+
+.upgrade-rarity {
+  display: inline-block;
+  font-size: 9px;
+  padding: 1px 6px;
+  margin-bottom: 4px;
+  color: #000;
+  font-weight: bold;
+}
+
+.upgrade-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #c4a35a;
+  margin-bottom: 2px;
+}
+
+.upgrade-desc {
+  font-size: 11px;
+  color: #a09070;
+}
+
+.upgrade-synergy-badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 9px;
+  padding: 1px 4px;
+  background: #ffaa00;
+  color: #000;
+  font-weight: bold;
+}

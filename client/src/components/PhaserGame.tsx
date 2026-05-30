@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { UpgradeDef } from "@/game/upgrades/types";
+import { UpgradeSelectOverlay } from "@/components/UpgradeSelect";
 
 interface SkillHudItem {
   key: string;
@@ -131,8 +133,10 @@ function PhaserGameInner({ char }: { char: string }) {
   const [floatMsg, setFloatMsg] = useState<{ id: number; text: string } | null>(null);
   const [toastMsg, setToastMsg] = useState<{ id: number; text: string } | null>(null);
   const [gameOver, setGameOver] = useState<GameOverData | null>(null);
+  const [upgradeChoices, setUpgradeChoices] = useState<UpgradeDef[]>([]);
   const msgCounter = useRef(0);
   const initialized = useRef(false);
+  const eventBusRef = useRef<{ emit: (event: string, ...args: unknown[]) => void } | null>(null);
 
   const handleRestart = () => {
     window.location.reload();
@@ -140,6 +144,11 @@ function PhaserGameInner({ char }: { char: string }) {
 
   const handleLobby = () => {
     router.push("/");
+  };
+
+  const handleUpgradeSelect = (def: UpgradeDef) => {
+    setUpgradeChoices([]);
+    eventBusRef.current?.emit("upgrade-selected", def);
   };
 
   useEffect(() => {
@@ -161,6 +170,7 @@ function PhaserGameInner({ char }: { char: string }) {
     const initPhaser = async () => {
       const { gameConfig, setSelectedCharacter } = await import("@/game/config");
       const { eventBus } = await import("@/game/EventBus");
+      eventBusRef.current = eventBus;
       setSelectedCharacter(char);
 
       eventBus.on("wave-start", (wave: unknown) => {
@@ -238,6 +248,10 @@ function PhaserGameInner({ char }: { char: string }) {
         showToast(`${bossNames[d.chapterId - 1] ?? "보스"} 등장! "두 다리로 걷는 자가 나타났다"`);
       });
 
+      eventBus.on("upgrade-select", (choices: unknown) => {
+        setUpgradeChoices(choices as UpgradeDef[]);
+      });
+
       const Phaser = await import("phaser");
       new Phaser.Game(gameConfig);
     };
@@ -255,6 +269,12 @@ function PhaserGameInner({ char }: { char: string }) {
           data={gameOver}
           onRestart={handleRestart}
           onLobby={handleLobby}
+        />
+      )}
+      {upgradeChoices.length > 0 && (
+        <UpgradeSelectOverlay
+          choices={upgradeChoices}
+          onSelect={handleUpgradeSelect}
         />
       )}
     </>
