@@ -50,6 +50,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.skillManager = new SkillManager(character);
     this.applyCharacterStats(character);
     this.applyPassives();
+
+    eventBus.emit("stats-update", { hp: this.hp, maxHp: this.maxHp, mana: this.mana, maxMana: this.maxMana });
   }
 
   private applyCharacterStats(character: string): void {

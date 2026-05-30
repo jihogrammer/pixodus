@@ -88,7 +88,7 @@ function drawSnowball(ctx: CanvasRenderingContext2D, frame: number): void {
   // 그림자
   shadow(ctx, 16, 28, 10, 4);
 
-  // 몸통 — 분홍빛 돼지
+  // 분홍빛 돼지 몸통
   ctx.fillStyle = P.SNOWBALL_SKIN;
   ctx.beginPath();
   ctx.ellipse(16, 17 + by, 11, 12, 0, 0, Math.PI * 2);
@@ -101,7 +101,7 @@ function drawSnowball(ctx: CanvasRenderingContext2D, frame: number): void {
   ctx.ellipse(22, 19 + by, 4, 5, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // 귀 — 돼지 귀 (삼각형)
+  // 돼지 귀 (뾰족)
   ctx.fillStyle = P.SNOWBALL_SKIN;
   ctx.beginPath();
   ctx.moveTo(5, 6 + by); ctx.lineTo(3, 1 + by); ctx.lineTo(10, 4 + by); ctx.closePath();
@@ -110,58 +110,48 @@ function drawSnowball(ctx: CanvasRenderingContext2D, frame: number): void {
   ctx.moveTo(27, 6 + by); ctx.lineTo(29, 1 + by); ctx.lineTo(22, 4 + by); ctx.closePath();
   ctx.fill();
 
-  // 큰 코 — 돼지는 코가 중요하다
+  // 큰 돼지코
   ctx.fillStyle = P.SNOWBALL_NOSE;
   ctx.beginPath();
   ctx.ellipse(16, 16 + by, 7, 5, 0, 0, Math.PI * 2);
   ctx.fill();
-  // 콧구멍
   ctx.fillStyle = "#D46A6A";
   ctx.beginPath();
   ctx.arc(13.5, 17 + by, 1.5, 0, Math.PI * 2);
   ctx.arc(18.5, 17 + by, 1.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // 눈 — 영리한 눈빛
+  // 영리한 눈
   ctx.fillStyle = P.WHITE;
   ctx.fillRect(9, 11 + by, 6, 5);
   ctx.fillRect(17, 11 + by, 6, 5);
   ctx.fillStyle = P.SNOWBALL_EYE;
   ctx.fillRect(10, 12 + by, 4, 3);
   ctx.fillRect(18, 12 + by, 4, 3);
-  // 하이라이트
   ctx.fillStyle = P.WHITE;
   ctx.fillRect(10, 11 + by, 2, 2);
   ctx.fillRect(18, 11 + by, 2, 2);
 
-  // 꼬리 — 돼지의 상징! 말린 꼬리
+  // 말린 꼬리 (왼쪽 뒷편 — 진행 방향 기준 뒤쪽)
   ctx.strokeStyle = P.SNOWBALL_TAIL;
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(28, 16 + by);
-  ctx.quadraticCurveTo(30, 12 + by, 29, 9 + by);
-  ctx.quadraticCurveTo(28, 7 + by, 26, 8 + by);
+  ctx.moveTo(3, 18 + by);
+  ctx.quadraticCurveTo(1, 14 + by, 2, 11 + by);
+  ctx.quadraticCurveTo(3, 9 + by, 5, 10 + by);
   ctx.stroke();
 
   // 발굽
   hoof(ctx, 8, 26 + by, 5, 3);
   hoof(ctx, 19, 26 + by, 5, 3);
 
-  // 빨간 밴다나 — 혁명가의 상징
+  // 빨간 밴다나
   ctx.fillStyle = P.SNOWBALL_BANDANA;
   ctx.beginPath();
   ctx.moveTo(5, 9 + by);
   ctx.lineTo(27, 9 + by);
   ctx.lineTo(29, 6 + by);
   ctx.lineTo(3, 6 + by);
-  ctx.closePath();
-  ctx.fill();
-  // 밴다나 매듭
-  ctx.fillStyle = P.SNOWBALL_BANDANA;
-  ctx.beginPath();
-  ctx.moveTo(3, 6 + by);
-  ctx.lineTo(0, 4 + by);
-  ctx.lineTo(3, 4 + by);
   ctx.closePath();
   ctx.fill();
 }

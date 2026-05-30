@@ -345,9 +345,20 @@ export class GameScene extends Phaser.Scene {
     const fragments = 5 + this.currentWave * 2;
     earnIdeaFragments(fragments);
 
-    // 2웨이브마다 업그레이드 선택
+    // 2웨이브마다 업그레이드 선택 (UI 미구현 상태에선 자동 적용)
     if (this.currentWave % 2 === 0) {
-      this.pauseForUpgrade();
+      const choices = this.upgradeManager.generateChoices(3);
+      if (choices.length > 0) {
+        const pick = choices[Math.floor(Math.random() * choices.length)];
+        this.upgradeManager.selectUpgrade(pick);
+        this.player.applyUpgradeBonuses(this.upgradeManager.getBonuses());
+        eventBus.emit("upgrade-selected-auto", pick);
+      }
+      this.time.addEvent({
+        delay: 2000,
+        loop: false,
+        callback: () => this.startWave(),
+      });
     } else {
       this.time.addEvent({
         delay: 2000,
